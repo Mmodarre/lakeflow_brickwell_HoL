@@ -1,0 +1,9 @@
+pipeline: gold_pipeline
+flowgroup: gold_policy_billing_summary_TMPL009
+
+use_template: TMPL009_gold_materialized_view
+
+template_parameters:
+  target_table: "policy_billing_summary"
+  view_sql: "sql/gold/policy_billing_summary.sql"
+  target_schema: "{gold_schema}"

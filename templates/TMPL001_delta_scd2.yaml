@@ -51,6 +51,11 @@ parameters:
     default: []
     description: "List of BINARY columns containing UUIDs that should be converted to standard UUID strings (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
 
+  - name: column_order_sql
+    type: string
+    required: true
+    description: "Path to external SQL file that selects columns in the correct order from v_<table>_with_sequence"
+
 actions:
   # Load from source streaming table
   - name: load_{{ target_table }}_cdc
@@ -85,10 +90,19 @@ actions:
         ) AS {{ sequence_timestamp_name }}
       FROM STREAM(v_{{ target_table }}_raw)
 
+  # Transform: Reorder columns to match expected schema
+  - name: order_{{ target_table }}_columns
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_with_sequence
+    target: v_{{ target_table }}_ordered
+    sql_path: "{{ column_order_sql }}"
+
   # Write with SCD Type 2
   - name: write_{{ target_table }}_scd2
     type: write
-    source: v_{{ target_table }}_with_sequence
+    source: v_{{ target_table }}_ordered
     write_target:
       type: streaming_table
       database: "{catalog}.{{target_schema}}"

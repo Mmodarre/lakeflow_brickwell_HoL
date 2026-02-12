@@ -1,0 +1,25 @@
+pipeline: silver_pipeline
+flowgroup: billing_payment_TMPL001
+
+use_template: TMPL001_delta_scd2
+
+template_parameters:
+  source_table: "{catalog}.{bronze_schema_billing}.payment"
+  target_table: "payment"
+  natural_keys:
+    - payment_number
+  uuid_columns:
+    - payment_id
+    - policy_id
+    - invoice_id
+  modified_at_column: "modified_at"
+  created_at_column: "created_at"
+  exclude_columns:
+    - "__START_AT"
+    - "__END_AT"
+    - "created_at"
+    - "modified_at"
+    - "created_by"
+    - "modified_by"
+  column_order_sql: "sql/silver/billing_payment_columns.sql"
+  target_schema: "{silver_schema_billing}"

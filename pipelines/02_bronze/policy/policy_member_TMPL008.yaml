@@ -1,9 +1,0 @@
-pipeline: bronze_pipeline
-flowgroup: policy_member_TMPL008
-
-use_template: TMPL008_cloudfiles_csv_bronze
-
-template_parameters:
-  source_path: "{incoming_volume}/policy/member"
-  target_table: "member"
-  target_schema: "{bronze_schema_policy}"

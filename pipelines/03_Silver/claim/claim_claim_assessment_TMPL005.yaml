@@ -1,0 +1,12 @@
+pipeline: silver_pipeline
+flowgroup: claim_claim_assessment_TMPL005
+
+use_template: TMPL005_cdc_log_append
+
+template_parameters:
+  source_table: "{catalog}.{bronze_schema_claim}.claim_assessment"
+  target_table: "claim_assessment"
+  epoch_us_columns:
+    - assessment_date
+  column_order_sql: "sql/silver/claim_claim_assessment_columns.sql"
+  target_schema: "{silver_schema_claim}"

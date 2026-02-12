@@ -1,0 +1,9 @@
+pipeline: gold_pipeline
+flowgroup: gold_benefit_utilization_TMPL009
+
+use_template: TMPL009_gold_materialized_view
+
+template_parameters:
+  target_table: "benefit_utilization"
+  view_sql: "sql/gold/benefit_utilization.sql"
+  target_schema: "{gold_schema}"

@@ -11,3 +11,4 @@ databricks.yml
 .cluade/
 .DS_Store
 data/data_full.zip
+*.bkup

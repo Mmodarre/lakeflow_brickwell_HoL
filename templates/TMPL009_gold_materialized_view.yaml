@@ -1,0 +1,38 @@
+name: TMPL009_gold_materialized_view
+version: "1.0"
+description: "Gold layer materialized view template using external SQL file for business-serving aggregations"
+
+parameters:
+  - name: target_table
+    type: string
+    required: true
+    description: "Target materialized view name (without catalog/schema prefix)"
+
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target schema name (without catalog prefix)"
+
+  - name: view_sql
+    type: string
+    required: true
+    description: "Path to external SQL file containing the materialized view query"
+
+actions:
+  # Load: Execute the gold SQL query
+  - name: load_{{ target_table }}
+    type: load
+    readMode: batch
+    source:
+      type: sql
+      sql_path: "{{ view_sql }}"
+    target: v_{{ target_table }}
+
+  # Write as materialized view
+  - name: write_{{ target_table }}
+    type: write
+    source: v_{{ target_table }}
+    write_target:
+      type: materialized_view
+      database: "{catalog}.{{ target_schema }}"
+      table: "{{ target_table }}"

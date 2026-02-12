@@ -42,6 +42,11 @@ parameters:
     default: ["_event_id", "_event_type", "_event_timestamp", "_event_worker_id", "created_by"]
     description: "Columns to exclude from final output (CDC metadata and audit columns)"
 
+  - name: column_order_sql
+    type: string
+    required: true
+    description: "Path to external SQL file that selects columns in the correct order from v_<table>_prepared"
+
 actions:
   # Load from source streaming table
   - name: load_{{ target_table }}_stream
@@ -74,10 +79,19 @@ actions:
         * except ({% for col in epoch_day_columns %}{{ col }}, {% endfor %}{% for col in epoch_us_columns %}{{ col }}, {% endfor %}{{ created_at_column }}{% if exclude_columns %}, {% endif %}{% for col in exclude_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %})
       FROM STREAM(v_{{ target_table }}_raw)
 
+  # Transform: Reorder columns to match expected schema
+  - name: order_{{ target_table }}_columns
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_prepared
+    target: v_{{ target_table }}_ordered
+    sql_path: "{{ column_order_sql }}"
+
   # Write as append-only streaming table
   - name: write_{{ target_table }}_append
     type: write
-    source: v_{{ target_table }}_prepared
+    source: v_{{ target_table }}_ordered
     write_target:
       type: streaming_table
       database: "{catalog}.{{target_schema}}"

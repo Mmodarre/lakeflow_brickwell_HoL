@@ -28,6 +28,12 @@ dev:
   bronze_schema_crm: edw_bronze_crm
   bronze_schema_digital: edw_bronze_digital
   bronze_schema_survey: edw_bronze_survey
+
+  # Domain-specific silver schemas
+  silver_schema_billing: edw_silver_billing
+  silver_schema_claim: edw_silver_claim
+  silver_schema_policy: edw_silver_policy
+
   meta_schema: _meta
 
 

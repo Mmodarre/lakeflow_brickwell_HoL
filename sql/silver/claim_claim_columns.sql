@@ -1,0 +1,38 @@
+-- Column ordering for claim.claim silver table
+-- Source: v_claim_with_sequence (after epoch day/timestamp conversion and sequence timestamp)
+SELECT
+  claim_id,
+  claim_number,
+  policy_id,
+  member_id,
+  coverage_id,
+  claim_type,
+  claim_status,
+  service_date,
+  lodgement_date,
+  assessment_date,
+  payment_date,
+  provider_id,
+  hospital_id,
+  CAST(total_charge AS DECIMAL(10, 2)) AS total_charge,
+  CAST(total_benefit AS DECIMAL(10, 2)) AS total_benefit,
+  CAST(total_gap AS DECIMAL(10, 2)) AS total_gap,
+  CAST(excess_applied AS DECIMAL(10, 2)) AS excess_applied,
+  CAST(co_payment_applied AS DECIMAL(10, 2)) AS co_payment_applied,
+  rejection_reason_id,
+  rejection_notes,
+  claim_channel,
+  pay_to,
+  is_fraud,
+  fraud_type,
+  CAST(fraud_original_charge AS DECIMAL(10, 2)) AS fraud_original_charge,
+  CAST(fraud_inflation_amount AS DECIMAL(10, 2)) AS fraud_inflation_amount,
+  fraud_inflation_ratio,
+  fraud_source_claim_id,
+  fraud_ring_id,
+  _sequence_timestamp,
+  -- Bronze metadata columns
+  _source_file_path,
+  _source_file_name,
+  _processing_timestamp
+FROM STREAM(v_claim_with_sequence)

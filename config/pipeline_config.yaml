@@ -20,3 +20,31 @@ event_log:
   name: bronze_pipeline_event_log
   schema: "{meta_schema}"
   catalog: "{catalog}"
+
+# Silver Pipeline - SCD2/CDC transformations from bronze
+---
+pipeline:
+  - silver_pipeline
+catalog: "{catalog}"
+schema: "{silver_schema}"
+tags:
+  project: brickwell_health
+  layer: silver
+event_log:
+  name: silver_pipeline_event_log
+  schema: "{meta_schema}"
+  catalog: "{catalog}"
+
+# Gold Pipeline - business-serving materialized views
+---
+pipeline:
+  - gold_pipeline
+catalog: "{catalog}"
+schema: "{gold_schema}"
+tags:
+  project: brickwell_health
+  layer: gold
+event_log:
+  name: gold_pipeline_event_log
+  schema: "{meta_schema}"
+  catalog: "{catalog}"
