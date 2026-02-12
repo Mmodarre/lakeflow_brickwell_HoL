@@ -1,0 +1,9 @@
+pipeline: gold_pipeline
+flowgroup: gold_member_claim_activity_TMPL009
+
+use_template: TMPL009_gold_materialized_view
+
+template_parameters:
+  target_table: "member_claim_activity"
+  view_sql: "sql/gold/member_claim_activity.sql"
+  target_schema: "{gold_schema}"
