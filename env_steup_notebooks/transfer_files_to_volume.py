@@ -33,12 +33,13 @@
 # COMMAND ----------
 
 # DBTITLE 1,Create Widgets
-dbutils.widgets.text("source_volume_path", "/Volumes/brickwell_health/edw_raw/extraction_volume", "Source Volume Path")
-dbutils.widgets.text("target_volume_path", "/Volumes/brickwell_health/edw_raw/landing", "Target Volume Path")
-dbutils.widgets.text("tracking_catalog", "brickwell_health", "Tracking Table Catalog")
+dbutils.widgets.text("source_volume_path", "/Volumes/brickwell_health_dev/_vault/store", "Source Volume Path")
+dbutils.widgets.text("target_volume_path", "/Volumes/brickwell_health_dev/edw_staging/incoming", "Target Volume Path")
+dbutils.widgets.text("tracking_catalog", "brickwell_health_dev", "Tracking Table Catalog")
 dbutils.widgets.text("tracking_schema", "_meta", "Tracking Table Schema")
 dbutils.widgets.dropdown("restart", "false", ["false", "true"], "Restart from Beginning")
-dbutils.widgets.text("month_limit", "", "Optional: Process only this specific month (YYYY-MM)")
+dbutils.widgets.text("month_limit", "2020-06", "Optional: Process only this specific month (YYYY-MM)")
+dbutils.widgets.text("process_up_to", "", "Optional: Process all months from start up to this month (YYYY-MM)")
 dbutils.widgets.dropdown("max_workers", "4", ["1", "2", "4", "8", "16"],
                          "Max Parallel Workers (1=sequential)")
 dbutils.widgets.dropdown("dry_run", "true", ["true", "false"], "Dry Run")
@@ -52,6 +53,7 @@ tracking_catalog = dbutils.widgets.get("tracking_catalog")
 tracking_schema = dbutils.widgets.get("tracking_schema")
 restart = dbutils.widgets.get("restart").lower() == "true"
 month_limit = dbutils.widgets.get("month_limit").strip()
+process_up_to = dbutils.widgets.get("process_up_to").strip()
 max_workers = int(dbutils.widgets.get("max_workers"))
 dry_run = dbutils.widgets.get("dry_run").lower() == "true"
 
@@ -62,6 +64,7 @@ print(f"  Tracking Catalog: {tracking_catalog}")
 print(f"  Tracking Schema: {tracking_schema}")
 print(f"  Restart: {restart}")
 print(f"  Month Limit: {month_limit if month_limit else 'None (process next available)'}")
+print(f"  Process Up To: {process_up_to if process_up_to else 'None (single month per run)'}")
 print(f"  Max Workers: {max_workers} {'(sequential)' if max_workers == 1 else '(parallel)'}")
 print(f"  Dry Run: {dry_run}")
 
@@ -432,50 +435,16 @@ def process_single_table_for_month(
 # COMMAND ----------
 
 # DBTITLE 1,Process All Tables for Simulation Month
-def process_all_tables(specific_month: Optional[str] = None):
+def _process_single_month(table_paths: List[Dict[str, str]], target_month: str):
     """
-    Main processing function — processes all tables for the same simulation month.
+    Process all tables for a single simulation month and update tracking.
 
-    All tables are synchronized to process the same month on each run.
-    Tables without data for that month are skipped.
+    Returns the month_stats dict for summary purposes.
     """
-    print("=" * 80)
-    print("Starting Incremental File Transfer (Global Simulation Month)")
-    print("=" * 80)
-
-    # 1. Discover all schema/table paths
-    table_paths = get_table_paths(source_volume_path)
-
-    if not table_paths:
-        print("No tables found in source volume!")
-        return
-
-    print(f"\nFound {len(table_paths)} tables across schemas")
-
-    # 2. Determine which month to process
-    if specific_month:
-        target_month = specific_month
-        print(f"User-specified simulation month: {target_month}")
-    else:
-        last_processed = get_last_processed_month()
-
-        if last_processed:
-            print(f"Last processed simulation month: {last_processed}")
-        else:
-            print(f"First run - no previous months processed")
-
-        target_month = get_next_simulation_month(last_processed)
-
-    if target_month is None:
-        print("\nAll simulation months have been processed!")
-        print("=" * 80)
-        return
-
     print(f"\n{'='*80}")
     print(f"Processing Simulation Month: {target_month}")
     print(f"{'='*80}\n")
 
-    # 3. Initialize statistics
     month_stats = {
         "total_tables_found": len(table_paths),
         "tables_with_files": 0,
@@ -485,7 +454,6 @@ def process_all_tables(specific_month: Optional[str] = None):
         "errors": [],
     }
 
-    # 4. Process tables (sequential or parallel)
     if max_workers == 1:
         print(f"  Processing tables sequentially...")
         for table_info in table_paths:
@@ -522,36 +490,117 @@ def process_all_tables(specific_month: Optional[str] = None):
                     month_stats["tables_skipped"] += 1
                     month_stats["errors"].append(f"{label}: {str(e)}")
 
-    # 5. Determine status
     if month_stats["errors"]:
         status = "partial" if month_stats["total_files_transferred"] > 0 else "failed"
     else:
         status = "success"
 
     month_stats["status"] = status
-
-    # 6. Update tracking
     update_tracking(target_month, month_stats)
 
-    # 7. Summary
-    print("\n" + "=" * 80)
-    print("Simulation Month Summary")
-    print("=" * 80)
-    print(f"Simulation Month: {target_month}")
-    print(f"Tables with files: {month_stats['tables_with_files']}")
-    print(f"Tables skipped: {month_stats['tables_skipped']}")
-    print(f"Total files transferred: {month_stats['total_files_transferred']}")
-    print(f"Total bytes transferred: {month_stats['total_bytes_transferred']:,}")
-    print(f"Status: {status}")
+    return month_stats
 
-    if month_stats["errors"]:
-        print(f"\nErrors encountered: {len(month_stats['errors'])}")
-        for error in month_stats["errors"][:10]:
-            print(f"  - {error}")
-        if len(month_stats["errors"]) > 10:
-            print(f"  ... and {len(month_stats['errors']) - 10} more")
+
+def process_all_tables(specific_month: Optional[str] = None, up_to_month: Optional[str] = None):
+    """
+    Main processing function — processes all tables for the same simulation month.
+
+    All tables are synchronized to process the same month on each run.
+    Tables without data for that month are skipped.
+
+    Args:
+        specific_month: If set, process only this exact month.
+        up_to_month: If set, process all months from the current position
+                     up to and including this month (YYYY-MM).
+                     Ignored when specific_month is set.
+    """
+    print("=" * 80)
+    print("Starting Incremental File Transfer (Global Simulation Month)")
+    print("=" * 80)
+
+    # 1. Discover all schema/table paths
+    table_paths = get_table_paths(source_volume_path)
+
+    if not table_paths:
+        print("No tables found in source volume!")
+        return
+
+    print(f"\nFound {len(table_paths)} tables across schemas")
+
+    # 2. Determine which month(s) to process
+    if specific_month:
+        # Single explicit month
+        months_to_process = [specific_month]
+        print(f"User-specified simulation month: {specific_month}")
+    elif up_to_month:
+        # All months from current position up to (and including) up_to_month
+        last_processed = get_last_processed_month()
+        if last_processed:
+            print(f"Last processed simulation month: {last_processed}")
+        else:
+            print(f"First run - no previous months processed")
+
+        # Gather all available months across all tables
+        all_months = set()
+        for tp in table_paths:
+            all_months.update(extract_months_from_table(tp["path"]))
+        sorted_months = sorted(all_months)
+
+        if last_processed is None:
+            months_to_process = [m for m in sorted_months if m <= up_to_month]
+        else:
+            months_to_process = [m for m in sorted_months if m > last_processed and m <= up_to_month]
+
+        if not months_to_process:
+            print(f"\nNo unprocessed months found up to {up_to_month}.")
+            print("=" * 80)
+            return
+
+        print(f"Will process {len(months_to_process)} month(s): {months_to_process[0]} .. {months_to_process[-1]}")
     else:
-        print("\nAll transfers completed successfully!")
+        # Default: single next month
+        last_processed = get_last_processed_month()
+        if last_processed:
+            print(f"Last processed simulation month: {last_processed}")
+        else:
+            print(f"First run - no previous months processed")
+
+        target_month = get_next_simulation_month(last_processed)
+        if target_month is None:
+            print("\nAll simulation months have been processed!")
+            print("=" * 80)
+            return
+        months_to_process = [target_month]
+
+    # 3. Process each month
+    grand_totals = {
+        "months_processed": 0,
+        "total_files": 0,
+        "total_bytes": 0,
+        "failed_months": [],
+    }
+
+    for target_month in months_to_process:
+        month_stats = _process_single_month(table_paths, target_month)
+
+        grand_totals["months_processed"] += 1
+        grand_totals["total_files"] += month_stats["total_files_transferred"]
+        grand_totals["total_bytes"] += month_stats["total_bytes_transferred"]
+        if month_stats["status"] != "success":
+            grand_totals["failed_months"].append(target_month)
+
+    # 4. Grand summary
+    print("\n" + "=" * 80)
+    print("Transfer Run Summary")
+    print("=" * 80)
+    print(f"Months processed: {grand_totals['months_processed']}")
+    print(f"Total files transferred: {grand_totals['total_files']}")
+    print(f"Total bytes transferred: {grand_totals['total_bytes']:,}")
+
+    if grand_totals["failed_months"]:
+        print(f"Months with errors: {grand_totals['failed_months']}")
+    else:
+        print("All transfers completed successfully!")
 
     print("=" * 80)
 
@@ -564,7 +613,10 @@ def process_all_tables(specific_month: Optional[str] = None):
 
 # DBTITLE 1,Run Transfer
 if not dry_run:
-    process_all_tables(specific_month=month_limit if month_limit else None)
+    process_all_tables(
+        specific_month=month_limit if month_limit else None,
+        up_to_month=process_up_to if process_up_to else None,
+    )
 else:
     print("Dry run - no files will be transferred")
     print(f"\nSource volume contents:")
@@ -661,6 +713,12 @@ display(
 # MAGIC ### Process Specific Month
 # MAGIC 1. Set `month_limit` to a specific month (e.g., `2024-01`)
 # MAGIC 2. Run notebook — processes only that month
+# MAGIC
+# MAGIC ### Process All Months Up To a Given Month
+# MAGIC 1. Leave `month_limit` empty
+# MAGIC 2. Set `process_up_to` to the target ceiling month (e.g., `2021-06`)
+# MAGIC 3. Run notebook — processes every unprocessed month from where it left off up to and including the target month
+# MAGIC 4. If `month_limit` is also set, it takes priority (single-month mode)
 # MAGIC
 # MAGIC ### Parallel Processing
 # MAGIC - **max_workers=1**: Sequential (safest, for debugging)

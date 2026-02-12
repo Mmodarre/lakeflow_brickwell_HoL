@@ -1,0 +1,9 @@
+pipeline: bronze_pipeline
+flowgroup: claim_claim_assessment_TMPL007
+
+use_template: TMPL007_cloudfiles_json_bronze
+
+template_parameters:
+  source_path: "{incoming_volume}/claim/claim_assessment"
+  target_table: "claim_assessment"
+  target_schema: "{bronze_schema_claim}"

@@ -1,0 +1,9 @@
+pipeline: bronze_pipeline
+flowgroup: claim_benefit_usage_TMPL007
+
+use_template: TMPL007_cloudfiles_json_bronze
+
+template_parameters:
+  source_path: "{incoming_volume}/claim/benefit_usage"
+  target_table: "benefit_usage"
+  target_schema: "{bronze_schema_claim}"

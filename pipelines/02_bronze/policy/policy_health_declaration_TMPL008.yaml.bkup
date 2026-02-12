@@ -1,0 +1,9 @@
+pipeline: bronze_pipeline
+flowgroup: policy_health_declaration_TMPL008
+
+use_template: TMPL008_cloudfiles_csv_bronze
+
+template_parameters:
+  source_path: "{incoming_volume}/policy/health_declaration"
+  target_table: "health_declaration"
+  target_schema: "{bronze_schema_policy}"

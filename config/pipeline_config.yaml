@@ -7,137 +7,16 @@ project_defaults:
   channel: CURRENT
   continuous: false
 
-# Billing Bronze Pipeline
+# Bronze Pipeline - all bronze ingestion flowgroups
 ---
 pipeline:
-  - billing_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_billing
+  - bronze_pipeline
+catalog: "{catalog}"
+schema: "{bronze_schema}"
 tags:
   project: brickwell_health
   layer: bronze
-  domain: billing
 event_log:
-  name: billing_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Policy Bronze Pipeline
----
-pipeline:
-  - policy_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_policy
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: policy
-event_log:
-  name: policy_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Communication Bronze Pipeline
----
-pipeline:
-  - communication_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_communication
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: communication
-event_log:
-  name: communication_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# CRM Bronze Pipeline
----
-pipeline:
-  - crm_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_crm
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: crm
-event_log:
-  name: crm_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Regulatory Bronze Pipeline
----
-pipeline:
-  - regulatory_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_regulatory
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: regulatory
-event_log:
-  name: regulatory_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Digital Bronze Pipeline
----
-pipeline:
-  - digital_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_digital
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: digital
-event_log:
-  name: digital_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Survey Bronze Pipeline
----
-pipeline:
-  - survey_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_survey
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: survey
-event_log:
-  name: survey_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Reference Bronze Pipeline
----
-pipeline:
-  - reference_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_reference
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: reference
-event_log:
-  name: reference_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
-
-# Claim Bronze Pipeline
----
-pipeline:
-  - claim_bronze
-catalog: ${var.default_pipeline_catalog}
-schema: edw_bronze_claim
-tags:
-  project: brickwell_health
-  layer: bronze
-  domain: claim
-event_log:
-  name: claim_bronze_event_log
-  schema: _meta
-  catalog: ${var.default_pipeline_catalog}
+  name: bronze_pipeline_event_log
+  schema: "{meta_schema}"
+  catalog: "{catalog}"

@@ -8,3 +8,6 @@ databricks.yml
 *.tmpl
 .databricks/
 .lhp_state.json
+.cluade/
+.DS_Store
+data/data_full.zip

@@ -1,0 +1,9 @@
+pipeline: bronze_pipeline
+flowgroup: regulatory_suspension_TMPL006
+
+use_template: TMPL006_cloudfiles_parquet_bronze
+
+template_parameters:
+  source_path: "{incoming_volume}/regulatory/suspension"
+  target_table: "suspension"
+  target_schema: "{bronze_schema_regulatory}"

@@ -1,0 +1,43 @@
+name: TMPL008_cloudfiles_csv_bronze
+version: "1.0"
+description: "CloudFiles bronze ingestion template for CSV files from UC Volume"
+
+parameters:
+  - name: source_path
+    type: string
+    required: true
+    description: "Path to the source CSV files on UC Volume (e.g., {incoming_volume}/policy/policy)"
+
+  - name: target_table
+    type: string
+    required: true
+    description: "Target table name (without catalog/schema prefix)"
+
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target schema name (without catalog prefix)"
+
+actions:
+  - name: load_{{ target_table }}_files
+    type: load
+    readMode: stream
+    operational_metadata: [_source_file_path, _source_file_name, _processing_timestamp]
+    source:
+      type: cloudfiles
+      path: "{{ source_path }}"
+      format: csv
+      options:
+        cloudFiles.format: csv
+        header: "true"
+        cloudFiles.schemaEvolutionMode: addNewColumns
+        cloudFiles.inferColumnTypes: "true"
+    target: v_{{ target_table }}_raw
+
+  - name: write_{{ target_table }}
+    type: write
+    source: v_{{ target_table }}_raw
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{{ target_schema }}"
+      table: "{{ target_table }}"

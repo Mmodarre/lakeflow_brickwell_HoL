@@ -10,12 +10,25 @@
 
 dev:
   env: dev
-  catalog: brickwell_health
+  catalog: brickwell_health_dev
   raw_schema: edw_raw
-  bronze_schema: edw_bronze
+  bronze_schema: edw_bronze_claim # just being used in DB Free Edition to have everything in a single pipeline
   silver_schema: edw_silver
   gold_schema: edw_gold
-  landing_path: /Volumes/brickwell_health/edw_raw/landing 
+  landing_path: /Volumes/brickwell_health/edw_raw/landing
+  incoming_volume: /Volumes/brickwell_health_dev/edw_staging/incoming
+
+  # Domain-specific bronze schemas
+  bronze_schema_billing: edw_bronze_billing
+  bronze_schema_claim: edw_bronze_claim
+  bronze_schema_policy: edw_bronze_policy
+  bronze_schema_regulatory: edw_bronze_regulatory
+  bronze_schema_reference: edw_bronze_reference
+  bronze_schema_communication: edw_bronze_communication
+  bronze_schema_crm: edw_bronze_crm
+  bronze_schema_digital: edw_bronze_digital
+  bronze_schema_survey: edw_bronze_survey
+  meta_schema: _meta
 
 
 # Secret configuration

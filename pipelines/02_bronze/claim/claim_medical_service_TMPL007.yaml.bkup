@@ -1,0 +1,9 @@
+pipeline: bronze_pipeline
+flowgroup: claim_medical_service_TMPL007
+
+use_template: TMPL007_cloudfiles_json_bronze
+
+template_parameters:
+  source_path: "{incoming_volume}/claim/medical_service"
+  target_table: "medical_service"
+  target_schema: "{bronze_schema_claim}"
