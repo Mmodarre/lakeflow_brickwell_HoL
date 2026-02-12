@@ -1,0 +1,11 @@
+pipeline: reference_bronze
+flowgroup: reference_interaction_outcome_TMPL003
+
+use_template: TMPL003_scd_type1
+
+template_parameters:
+  source_table: "brickwell_health.reference_ingestion_schema.interaction_outcome"
+  target_table: "interaction_outcome"
+  natural_keys:
+    - outcome_code
+  target_schema: "edw_bronze_reference"

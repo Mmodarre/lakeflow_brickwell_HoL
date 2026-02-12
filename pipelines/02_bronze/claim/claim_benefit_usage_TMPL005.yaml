@@ -1,0 +1,11 @@
+pipeline: claim_bronze
+flowgroup: claim_benefit_usage_TMPL005
+
+use_template: TMPL005_cdc_log_append
+
+template_parameters:
+  source_table: "brickwell_health.ingest_schema_bwh.benefit_usage"
+  target_table: "benefit_usage"
+  epoch_day_columns:
+    - usage_date
+  target_schema: "edw_bronze_claim"

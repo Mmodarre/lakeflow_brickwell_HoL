@@ -1,0 +1,11 @@
+pipeline: claim_bronze
+flowgroup: claim_medical_service_TMPL005
+
+use_template: TMPL005_cdc_log_append
+
+template_parameters:
+  source_table: "brickwell_health.ingest_schema_bwh.medical_service"
+  target_table: "medical_service"
+  epoch_day_columns:
+    - service_date
+  target_schema: "edw_bronze_claim"

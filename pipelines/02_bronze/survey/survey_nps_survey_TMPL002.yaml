@@ -1,0 +1,13 @@
+pipeline: survey_bronze
+flowgroup: survey_nps_survey_TMPL002
+
+use_template: TMPL002_append_only
+
+template_parameters:
+  source_table: "brickwell_health.survey_ingestion_schema.nps_survey"
+  target_table: "nps_survey"
+  uuid_columns:
+    - survey_id
+    - policy_id
+    - member_id
+  target_schema: "edw_bronze_survey"

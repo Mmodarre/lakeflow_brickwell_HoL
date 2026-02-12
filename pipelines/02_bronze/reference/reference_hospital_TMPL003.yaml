@@ -1,0 +1,11 @@
+pipeline: reference_bronze
+flowgroup: reference_hospital_TMPL003
+
+use_template: TMPL003_scd_type1
+
+template_parameters:
+  source_table: "brickwell_health.reference_ingestion_schema.hospital"
+  target_table: "hospital"
+  natural_keys:
+    - hospital_code
+  target_schema: "edw_bronze_reference"

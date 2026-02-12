@@ -1,0 +1,105 @@
+name: TMPL001_delta_scd2
+version: "1.0"
+description: "SCD Type 2 template for tracking historical changes using natural keys and sequence timestamps"
+
+parameters:
+  - name: source_table
+    type: string
+    required: true
+    description: "Fully qualified source table name (e.g., catalog.schema.table)"
+
+  - name: target_table
+    type: string
+    required: true
+    description: "Target table name (without catalog/schema prefix)"
+
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target table Schema name (without catalog prefix)"
+
+  - name: natural_keys
+    type: array
+    required: true
+    description: "Business identifier column(s) that remain constant across versions"
+
+  - name: modified_at_column
+    type: string
+    required: true
+    description: "Column name containing the modification timestamp"
+
+  - name: created_at_column
+    type: string
+    required: true
+    description: "Column name containing the creation timestamp (fallback for sequence)"
+
+  - name: exclude_columns
+    type: array
+    required: false
+    default: ["__START_AT", "__END_AT", "created_at", "modified_at", "created_by", "modified_by"]
+    description: "Columns to exclude from final output (e.g., CDC metadata, audit columns)"
+
+  - name: sequence_timestamp_name
+    type: string
+    required: false
+    default: "_sequence_timestamp"
+    description: "Name for the generated sequence timestamp column"
+
+  - name: uuid_columns
+    type: array
+    required: false
+    default: []
+    description: "List of BINARY columns containing UUIDs that should be converted to standard UUID strings (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)"
+
+actions:
+  # Load from source streaming table
+  - name: load_{{ target_table }}_cdc
+    type: load
+    operational_metadata: [_processing_timestamp]
+    readMode: stream
+    source:
+      type: delta
+      table: "{{ source_table }}"
+    target: v_{{ target_table }}_raw
+
+  # Transform: Convert UUIDs and add sequence timestamp for SCD2
+  # Convert BINARY UUID columns to standard UUID string format
+  # Exclude CDC metadata columns and use COALESCE for sequence ordering
+  - name: add_sequence_timestamp
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_raw
+    target: v_{{ target_table }}_with_sequence
+    sql: |
+      SELECT
+        {% if uuid_columns %}-- Convert BINARY UUIDs to standard UUID strings
+        {% for col in uuid_columns %}concat_ws('-', substr(hex({{ col }}), 1, 8), substr(hex({{ col }}), 9, 4), substr(hex({{ col }}), 13, 4), substr(hex({{ col }}), 17, 4), substr(hex({{ col }}), 21, 12)) AS {{ col }}{% if not loop.last %},
+        {% endif %}{% endfor %},
+        {% endif %}-- Business columns only (exclude UUID and metadata columns)
+        * except ({% for col in uuid_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}{% if uuid_columns and exclude_columns %}, {% endif %}{% for col in exclude_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}),
+        -- Add sequence timestamp for SCD2 ordering
+        COALESCE(
+          CAST({{ modified_at_column }} AS TIMESTAMP),
+          CAST({{ created_at_column }} AS TIMESTAMP)
+        ) AS {{ sequence_timestamp_name }}
+      FROM STREAM(v_{{ target_table }}_raw)
+
+  # Write with SCD Type 2
+  - name: write_{{ target_table }}_scd2
+    type: write
+    source: v_{{ target_table }}_with_sequence
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{{target_schema}}"
+      table: "{{ target_table }}"
+      mode: cdc
+      cdc_config:
+        # Natural key - business identifier that remains constant across versions
+        keys: "{{ natural_keys }}"
+        # Sequence column for ordering changes
+        sequence_by: "{{ sequence_timestamp_name }}"
+        except_column_list:
+          - "{{ sequence_timestamp_name }}"
+        # SCD Type 2 configuration
+        scd_type: 2

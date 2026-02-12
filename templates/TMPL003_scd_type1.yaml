@@ -1,0 +1,96 @@
+name: TMPL003_scd_type1
+version: "1.0"
+description: "SCD Type 1 template for reference/lookup tables - maintains only current state with no history"
+
+parameters:
+  - name: source_table
+    type: string
+    required: true
+    description: "Fully qualified source table name (e.g., catalog.schema.table)"
+
+  - name: target_table
+    type: string
+    required: true
+    description: "Target table name (without catalog/schema prefix)"
+  
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target table Schema name (without catalog prefix)"
+
+  - name: natural_keys
+    type: array
+    required: true
+    description: "Business identifier column(s) for matching records (e.g., ['id'] or ['code'])"
+
+  - name: cdc_timestamp_column
+    type: string
+    required: false
+    default: "__START_AT"
+    description: "CDC timestamp column for ordering changes (Unity Catalog CDC metadata struct)"
+
+  - name: exclude_columns
+    type: array
+    required: false
+    default: ["__START_AT", "__END_AT", "created_by"]
+    description: "Columns to exclude from final output (e.g., CDC metadata, audit columns). Note: created_at is kept for audit trail."
+
+  - name: sequence_timestamp_name
+    type: string
+    required: false
+    default: "_sequence_timestamp"
+    description: "Name for the generated sequence column based on CDC timestamp"
+
+  - name: uuid_columns
+    type: array
+    required: false
+    default: []
+    description: "List of BINARY columns containing UUIDs that should be converted to hex strings"
+
+actions:
+  # Load from source streaming table
+  - name: load_{{ target_table }}_stream
+    type: load
+    operational_metadata: [_processing_timestamp]
+    readMode: stream
+    source:
+      type: delta
+      table: "{{ source_table }}"
+    target: v_{{ target_table }}_raw
+
+  # Transform: Convert UUIDs and add sequence based on CDC timestamp
+  - name: add_sequence_timestamp
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_raw
+    target: v_{{ target_table }}_with_sequence
+    sql: |
+      SELECT
+        {% if uuid_columns %}-- Convert BINARY UUIDs to hex strings
+        {% for col in uuid_columns %}hex({{ col }}) AS {{ col }}{% if not loop.last %},
+        {% endif %}{% endfor %},
+        {% endif %}-- Business columns only (exclude UUID and metadata columns)
+        * except ({% for col in uuid_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}{% if uuid_columns and exclude_columns %}, {% endif %}{% for col in exclude_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}),
+        -- Add sequence based on CDC timestamp for ordering (latest wins)
+        {{ cdc_timestamp_column }}.__cdc_timestamp_value AS {{ sequence_timestamp_name }}
+      FROM STREAM(v_{{ target_table }}_raw)
+
+  # Write with SCD Type 1 (current state only, no history)
+  - name: write_{{ target_table }}_scd1
+    type: write
+    source: v_{{ target_table }}_with_sequence
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{{target_schema}}"
+      table: "{{ target_table }}"
+      mode: cdc
+      cdc_config:
+        # Natural key - business identifier for matching records
+        keys: "{{ natural_keys }}"
+        # Sequence column for ordering changes (latest timestamp wins)
+        sequence_by: "{{ sequence_timestamp_name }}"
+        except_column_list:
+          - "{{ sequence_timestamp_name }}"
+        # SCD Type 1 - only current state, no history
+        scd_type: 1

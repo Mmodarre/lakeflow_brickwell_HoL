@@ -1,0 +1,11 @@
+pipeline: reference_bronze
+flowgroup: reference_benefit_category_TMPL003
+
+use_template: TMPL003_scd_type1
+
+template_parameters:
+  source_table: "brickwell_health.reference_ingestion_schema.benefit_category"
+  target_table: "benefit_category"
+  natural_keys:
+    - category_code
+  target_schema: "edw_bronze_reference"

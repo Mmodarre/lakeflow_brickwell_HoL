@@ -1,0 +1,14 @@
+pipeline: billing_bronze
+flowgroup: billing_refund_TMPL002
+
+use_template: TMPL002_append_only
+
+template_parameters:
+  source_table: "brickwell_health.billing_ingestion_schema.refund"
+  target_table: "refund"
+  uuid_columns:
+    - refund_id
+    - policy_id
+    - member_id
+    - bank_account_id
+  target_schema: "edw_bronze_billing"

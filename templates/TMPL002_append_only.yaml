@@ -1,0 +1,67 @@
+name: TMPL002_append_only
+version: "1.0"
+description: "Append-only template for immutable event tables (e.g., communications, digital events, survey responses)"
+
+parameters:
+  - name: source_table
+    type: string
+    required: true
+    description: "Fully qualified source table name (e.g., catalog.schema.table)"
+
+  - name: target_table
+    type: string
+    required: true
+    description: "Target table name (without catalog/schema prefix)"
+  
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target table Schema name (without catalog prefix)"
+
+  - name: exclude_columns
+    type: array
+    required: false
+    default: ["__START_AT", "__END_AT", "created_by"]
+    description: "Columns to exclude from final output (e.g., CDC metadata, audit columns). Note: created_at is kept for audit trail."
+
+  - name: uuid_columns
+    type: array
+    required: false
+    default: []
+    description: "List of BINARY columns containing UUIDs that should be converted to hex strings"
+
+actions:
+  # Load from source streaming table
+  - name: load_{{ target_table }}_stream
+    type: load
+    operational_metadata: [_processing_timestamp]
+    readMode: stream
+    source:
+      type: delta
+      table: "{{ source_table }}"
+    target: v_{{ target_table }}_raw
+
+  # Transform: Convert UUIDs and exclude unwanted columns
+  - name: prepare_{{ target_table }}
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_raw
+    target: v_{{ target_table }}_prepared
+    sql: |
+      SELECT
+        {% if uuid_columns %}-- Convert BINARY UUIDs to hex strings
+        {% for col in uuid_columns %}hex({{ col }}) AS {{ col }}{% if not loop.last %},
+        {% endif %}{% endfor %},
+        {% endif %}-- Business columns only (exclude UUID and metadata columns)
+        * except ({% for col in uuid_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}{% if uuid_columns and exclude_columns %}, {% endif %}{% for col in exclude_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %})
+      FROM STREAM(v_{{ target_table }}_raw)
+
+  # Write as append-only streaming table
+  - name: write_{{ target_table }}_append
+    type: write
+    source: v_{{ target_table }}_prepared
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{bronze_schema}"
+      table: "{{ target_table }}"

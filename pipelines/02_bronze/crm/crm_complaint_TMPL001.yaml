@@ -1,0 +1,29 @@
+# CRM Complaint table - SCD Type 2 with UUID conversion
+pipeline: crm_bronze
+flowgroup: crm_complaint_TMPL001
+
+use_template: TMPL001_delta_scd2
+
+template_parameters:
+  source_table: "brickwell_health.crm_ingestion_schema.complaint"
+  target_table: "complaint"
+  natural_keys:
+    - complaint_number
+  modified_at_column: "modified_at"
+  created_at_column: "created_at"
+  exclude_columns:
+    - "__START_AT"
+    - "__END_AT"
+    - "created_at"
+    - "modified_at"
+    - "created_by"
+    - "modified_by"
+  sequence_timestamp_name: "_sequence_timestamp"
+  uuid_columns:
+    - complaint_id
+    - case_id
+    - policy_id
+    - member_id
+    - related_claim_id
+    - related_invoice_id
+  target_schema: "edw_bronze_crm"

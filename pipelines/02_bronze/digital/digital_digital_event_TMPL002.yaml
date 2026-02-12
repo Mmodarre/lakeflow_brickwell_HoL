@@ -1,0 +1,16 @@
+pipeline: digital_bronze
+flowgroup: digital_digital_event_TMPL002
+
+use_template: TMPL002_append_only
+
+template_parameters:
+  source_table: "brickwell_health.digital_ingestion_schema.digital_event"
+  target_table: "digital_event"
+  uuid_columns:
+    - event_id
+    - session_id
+    - member_id
+  exclude_columns:
+    - __START_AT
+    - __END_AT
+  target_schema: "edw_bronze_digital"

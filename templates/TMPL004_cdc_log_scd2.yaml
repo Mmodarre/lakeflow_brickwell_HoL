@@ -1,0 +1,103 @@
+name: TMPL004_cdc_log_scd2
+version: "1.0"
+description: "SCD Type 2 template for CDC log tables with epoch timestamps and partial update support (ignore_null_updates)"
+
+parameters:
+  - name: source_table
+    type: string
+    required: true
+    description: "Fully qualified source table name (e.g., catalog.schema.table)"
+
+  - name: target_table
+    type: string
+    required: true
+    description: "Target table name (without catalog/schema prefix)"
+
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target table Schema name (without catalog prefix)"
+
+  - name: natural_keys
+    type: array
+    required: true
+    description: "Business identifier column(s) that remain constant across versions"
+
+  - name: modified_at_column
+    type: string
+    required: false
+    default: "modified_at"
+    description: "Column name containing the modification timestamp (bigint microsecond epoch)"
+
+  - name: created_at_column
+    type: string
+    required: false
+    default: "created_at"
+    description: "Column name containing the creation timestamp (bigint microsecond epoch, fallback for sequence)"
+
+  - name: epoch_day_columns
+    type: array
+    required: false
+    default: []
+    description: "List of INT columns containing epoch days (days since 1970-01-01) to convert to DATE"
+
+  - name: exclude_columns
+    type: array
+    required: false
+    default: ["_event_id", "_event_type", "_event_timestamp", "_event_worker_id", "created_at", "modified_at", "created_by", "modified_by"]
+    description: "Columns to exclude from final output (CDC metadata and audit columns)"
+
+  - name: sequence_timestamp_name
+    type: string
+    required: false
+    default: "_sequence_timestamp"
+    description: "Name for the generated sequence timestamp column"
+
+actions:
+  # Load from source streaming table
+  - name: load_{{ target_table }}_cdc
+    type: load
+    operational_metadata: [_processing_timestamp]
+    readMode: stream
+    source:
+      type: delta
+      table: "{{ source_table }}"
+    target: v_{{ target_table }}_raw
+
+  # Transform: Convert epoch timestamps/dates and add sequence timestamp for SCD2
+  - name: add_sequence_timestamp
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_raw
+    target: v_{{ target_table }}_with_sequence
+    sql: |
+      SELECT
+        {% if epoch_day_columns %}-- Convert epoch day columns to DATE
+        {% for col in epoch_day_columns %}CAST(date_add('1970-01-01', {{ col }}) AS DATE) AS {{ col }}{% if not loop.last %},
+        {% endif %}{% endfor %},
+        {% endif %}-- Business columns (exclude converted date columns and metadata)
+        * except ({% for col in epoch_day_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}{% if epoch_day_columns and exclude_columns %}, {% endif %}{% for col in exclude_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %}),
+        -- Add sequence timestamp for SCD2 ordering (convert microsecond epoch to TIMESTAMP)
+        COALESCE(
+          timestamp_micros({{ modified_at_column }}),
+          timestamp_micros({{ created_at_column }})
+        ) AS {{ sequence_timestamp_name }}
+      FROM STREAM(v_{{ target_table }}_raw)
+
+  # Write with SCD Type 2 and ignore_null_updates for partial CDC updates
+  - name: write_{{ target_table }}_scd2
+    type: write
+    source: v_{{ target_table }}_with_sequence
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{{target_schema}}"
+      table: "{{ target_table }}"
+      mode: cdc
+      cdc_config:
+        keys: "{{ natural_keys }}"
+        sequence_by: "{{ sequence_timestamp_name }}"
+        except_column_list:
+          - "{{ sequence_timestamp_name }}"
+        scd_type: 2
+        ignore_null_updates: true

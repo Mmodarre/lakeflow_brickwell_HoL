@@ -1,0 +1,11 @@
+pipeline: reference_bronze
+flowgroup: reference_communication_template_TMPL003
+
+use_template: TMPL003_scd_type1
+
+template_parameters:
+  source_table: "brickwell_health.reference_ingestion_schema.communication_template"
+  target_table: "communication_template"
+  natural_keys:
+    - template_code
+  target_schema: "edw_bronze_reference"

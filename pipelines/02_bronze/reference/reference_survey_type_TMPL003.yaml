@@ -1,0 +1,11 @@
+pipeline: reference_bronze
+flowgroup: reference_survey_type_TMPL003
+
+use_template: TMPL003_scd_type1
+
+template_parameters:
+  source_table: "brickwell_health.reference_ingestion_schema.survey_type"
+  target_table: "survey_type"
+  natural_keys:
+    - type_code
+  target_schema: "edw_bronze_reference"

@@ -1,0 +1,84 @@
+name: TMPL005_cdc_log_append
+version: "1.0"
+description: "Append-only template for CDC log insert-only tables with epoch timestamp/date conversion"
+
+parameters:
+  - name: source_table
+    type: string
+    required: true
+    description: "Fully qualified source table name (e.g., catalog.schema.table)"
+
+  - name: target_table
+    type: string
+    required: true
+    description: "Target table name (without catalog/schema prefix)"
+
+  - name: target_schema
+    type: string
+    required: true
+    description: "Target table Schema name (without catalog prefix)"
+
+  - name: epoch_day_columns
+    type: array
+    required: false
+    default: []
+    description: "List of INT columns containing epoch days (days since 1970-01-01) to convert to DATE"
+
+  - name: epoch_us_columns
+    type: array
+    required: false
+    default: []
+    description: "List of BIGINT columns containing microsecond epoch to convert to TIMESTAMP"
+
+  - name: created_at_column
+    type: string
+    required: false
+    default: "created_at"
+    description: "Creation timestamp column (bigint microsecond epoch, converted to TIMESTAMP and kept in output)"
+
+  - name: exclude_columns
+    type: array
+    required: false
+    default: ["_event_id", "_event_type", "_event_timestamp", "_event_worker_id", "created_by"]
+    description: "Columns to exclude from final output (CDC metadata and audit columns)"
+
+actions:
+  # Load from source streaming table
+  - name: load_{{ target_table }}_stream
+    type: load
+    operational_metadata: [_processing_timestamp]
+    readMode: stream
+    source:
+      type: delta
+      table: "{{ source_table }}"
+    target: v_{{ target_table }}_raw
+
+  # Transform: Convert epoch timestamps/dates and exclude CDC metadata
+  - name: prepare_{{ target_table }}
+    type: transform
+    transform_type: sql
+    operational_metadata: [_processing_timestamp]
+    source: v_{{ target_table }}_raw
+    target: v_{{ target_table }}_prepared
+    sql: |
+      SELECT
+        {% if epoch_day_columns %}-- Convert epoch day columns to DATE
+        {% for col in epoch_day_columns %}CAST(date_add('1970-01-01', {{ col }}) AS DATE) AS {{ col }}{% if not loop.last %},
+        {% endif %}{% endfor %},
+        {% endif %}{% if epoch_us_columns %}-- Convert epoch microsecond columns to TIMESTAMP
+        {% for col in epoch_us_columns %}timestamp_micros({{ col }}) AS {{ col }}{% if not loop.last %},
+        {% endif %}{% endfor %},
+        {% endif %}-- Convert created_at from microsecond epoch to TIMESTAMP
+        timestamp_micros({{ created_at_column }}) AS {{ created_at_column }},
+        -- Business columns (exclude converted and metadata columns)
+        * except ({% for col in epoch_day_columns %}{{ col }}, {% endfor %}{% for col in epoch_us_columns %}{{ col }}, {% endfor %}{{ created_at_column }}{% if exclude_columns %}, {% endif %}{% for col in exclude_columns %}{{ col }}{% if not loop.last %}, {% endif %}{% endfor %})
+      FROM STREAM(v_{{ target_table }}_raw)
+
+  # Write as append-only streaming table
+  - name: write_{{ target_table }}_append
+    type: write
+    source: v_{{ target_table }}_prepared
+    write_target:
+      type: streaming_table
+      database: "{catalog}.{{target_schema}}"
+      table: "{{ target_table }}"
