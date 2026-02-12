@@ -16,4 +16,5 @@ template_parameters:
   modified_at_column: "modified_at"
   created_at_column: "created_at"
   column_order_sql: "sql/silver/claim_claim_columns.sql"
+  expectations_file: "expectations/silver/claim_claim.json"
   target_schema: "{silver_schema_claim}"

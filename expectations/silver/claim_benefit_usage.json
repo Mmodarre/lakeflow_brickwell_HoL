@@ -1,0 +1,14 @@
+{
+  "expectations": [
+    {"name": "benefit_usage_id_not_null", "expression": "benefit_usage_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "policy_id_not_null", "expression": "policy_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "member_id_not_null", "expression": "member_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "claim_id_not_null", "expression": "claim_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "usage_date_not_null", "expression": "usage_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "usage_amount_non_negative", "expression": "usage_amount >= 0", "failureAction": "warn"},
+    {"name": "annual_limit_positive", "expression": "annual_limit > 0", "failureAction": "warn"},
+    {"name": "remaining_limit_non_negative", "expression": "remaining_limit >= 0", "failureAction": "warn"},
+    {"name": "remaining_not_exceed_annual", "expression": "remaining_limit <= annual_limit", "failureAction": "warn"},
+    {"name": "valid_benefit_year", "expression": "benefit_year >= 2000 AND benefit_year <= 2100", "failureAction": "warn"}
+  ]
+}

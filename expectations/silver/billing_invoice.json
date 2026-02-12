@@ -1,0 +1,16 @@
+{
+  "expectations": [
+    {"name": "invoice_id_not_null", "expression": "invoice_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "invoice_number_not_null", "expression": "invoice_number IS NOT NULL", "failureAction": "warn"},
+    {"name": "policy_id_not_null", "expression": "policy_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "invoice_date_not_null", "expression": "invoice_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "net_amount_non_negative", "expression": "net_amount >= 0", "failureAction": "warn"},
+    {"name": "total_amount_non_negative", "expression": "total_amount >= 0", "failureAction": "warn"},
+    {"name": "gst_amount_non_negative", "expression": "gst_amount >= 0", "failureAction": "warn"},
+    {"name": "paid_amount_non_negative", "expression": "paid_amount >= 0", "failureAction": "warn"},
+    {"name": "balance_due_non_negative", "expression": "balance_due >= 0", "failureAction": "warn"},
+    {"name": "valid_invoice_status", "expression": "invoice_status IN ('draft', 'issued', 'paid', 'overdue', 'cancelled', 'partially_paid')", "failureAction": "warn"},
+    {"name": "period_end_after_start", "expression": "period_end >= period_start", "failureAction": "warn"},
+    {"name": "due_date_after_invoice_date", "expression": "due_date >= invoice_date", "failureAction": "warn"}
+  ]
+}

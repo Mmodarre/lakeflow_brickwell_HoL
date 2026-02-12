@@ -1,0 +1,12 @@
+{
+  "expectations": [
+    {"name": "payment_id_not_null", "expression": "payment_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "payment_number_not_null", "expression": "payment_number IS NOT NULL", "failureAction": "warn"},
+    {"name": "policy_id_not_null", "expression": "policy_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "invoice_id_not_null", "expression": "invoice_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "payment_date_not_null", "expression": "payment_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "payment_amount_positive", "expression": "payment_amount > 0", "failureAction": "warn"},
+    {"name": "valid_payment_status", "expression": "payment_status IN ('pending', 'completed', 'failed', 'reversed', 'refunded')", "failureAction": "warn"},
+    {"name": "valid_payment_method", "expression": "payment_method IN ('direct_debit', 'credit_card', 'bpay', 'eft', 'cash', 'cheque')", "failureAction": "warn"}
+  ]
+}

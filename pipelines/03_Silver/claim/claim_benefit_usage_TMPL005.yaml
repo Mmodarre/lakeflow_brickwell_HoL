@@ -9,4 +9,5 @@ template_parameters:
   epoch_day_columns:
     - usage_date
   column_order_sql: "sql/silver/claim_benefit_usage_columns.sql"
+  expectations_file: "expectations/silver/claim_benefit_usage.json"
   target_schema: "{silver_schema_claim}"

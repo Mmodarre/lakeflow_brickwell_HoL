@@ -30,11 +30,11 @@ actions:
       options:
         cloudFiles.format: parquet
         cloudFiles.schemaEvolutionMode: addNewColumns
-    target: v_{{ target_table }}_raw
+    target: v_bronze_{{ target_table }}_raw
 
   - name: write_{{ target_table }}
     type: write
-    source: v_{{ target_table }}_raw
+    source: v_bronze_{{ target_table }}_raw
     write_target:
       type: streaming_table
       database: "{catalog}.{{ target_schema }}"

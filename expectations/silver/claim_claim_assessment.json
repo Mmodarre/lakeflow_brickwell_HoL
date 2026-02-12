@@ -1,0 +1,13 @@
+{
+  "expectations": [
+    {"name": "assessment_id_not_null", "expression": "assessment_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "claim_id_not_null", "expression": "claim_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "assessment_date_not_null", "expression": "assessment_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "assessed_by_not_null", "expression": "assessed_by IS NOT NULL", "failureAction": "warn"},
+    {"name": "original_benefit_non_negative", "expression": "original_benefit >= 0", "failureAction": "warn"},
+    {"name": "adjusted_benefit_non_negative", "expression": "adjusted_benefit >= 0", "failureAction": "warn"},
+    {"name": "valid_outcome", "expression": "outcome IN ('approved', 'partially_approved', 'rejected', 'pending_review', 'escalated')", "failureAction": "warn"},
+    {"name": "valid_assessment_type", "expression": "assessment_type IN ('auto', 'manual', 'review', 'appeal')", "failureAction": "warn"},
+    {"name": "adjusted_not_exceed_original", "expression": "adjusted_benefit <= original_benefit", "failureAction": "warn"}
+  ]
+}

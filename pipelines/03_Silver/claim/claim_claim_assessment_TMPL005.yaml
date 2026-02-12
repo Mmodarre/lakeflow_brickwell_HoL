@@ -9,4 +9,5 @@ template_parameters:
   epoch_us_columns:
     - assessment_date
   column_order_sql: "sql/silver/claim_claim_assessment_columns.sql"
+  expectations_file: "expectations/silver/claim_claim_assessment.json"
   target_schema: "{silver_schema_claim}"

@@ -22,4 +22,5 @@ template_parameters:
     - "created_by"
     - "modified_by"
   column_order_sql: "sql/silver/billing_payment_columns.sql"
+  expectations_file: "expectations/silver/billing_payment.json"
   target_schema: "{silver_schema_billing}"

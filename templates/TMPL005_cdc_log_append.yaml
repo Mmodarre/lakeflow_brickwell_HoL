@@ -47,6 +47,11 @@ parameters:
     required: true
     description: "Path to external SQL file that selects columns in the correct order from v_<table>_prepared"
 
+  - name: expectations_file
+    type: string
+    required: true
+    description: "Path to JSON file containing data quality expectations"
+
 actions:
   # Load from source streaming table
   - name: load_{{ target_table }}_stream
@@ -88,10 +93,19 @@ actions:
     target: v_{{ target_table }}_ordered
     sql_path: "{{ column_order_sql }}"
 
+  # Data quality: Apply expectations (warn only)
+  - name: validate_{{ target_table }}
+    type: transform
+    transform_type: data_quality
+    source: v_{{ target_table }}_ordered
+    target: v_{{ target_table }}_validated
+    readMode: stream
+    expectations_file: "{{ expectations_file }}"
+
   # Write as append-only streaming table
   - name: write_{{ target_table }}_append
     type: write
-    source: v_{{ target_table }}_ordered
+    source: v_{{ target_table }}_validated
     write_target:
       type: streaming_table
       database: "{catalog}.{{target_schema}}"

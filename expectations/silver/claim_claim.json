@@ -1,0 +1,17 @@
+{
+  "expectations": [
+    {"name": "claim_id_not_null", "expression": "claim_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "claim_number_not_null", "expression": "claim_number IS NOT NULL", "failureAction": "warn"},
+    {"name": "policy_id_not_null", "expression": "policy_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "member_id_not_null", "expression": "member_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "service_date_not_null", "expression": "service_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "lodgement_date_not_null", "expression": "lodgement_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "total_charge_non_negative", "expression": "total_charge >= 0", "failureAction": "warn"},
+    {"name": "total_benefit_non_negative", "expression": "total_benefit >= 0", "failureAction": "warn"},
+    {"name": "total_gap_non_negative", "expression": "total_gap >= 0", "failureAction": "warn"},
+    {"name": "excess_applied_non_negative", "expression": "excess_applied >= 0", "failureAction": "warn"},
+    {"name": "valid_claim_status", "expression": "claim_status IN ('lodged', 'under_assessment', 'approved', 'partially_approved', 'rejected', 'paid', 'appealed')", "failureAction": "warn"},
+    {"name": "valid_claim_type", "expression": "claim_type IN ('hospital', 'general_treatment', 'dental', 'optical', 'physiotherapy', 'pharmacy', 'ambulance', 'mental_health')", "failureAction": "warn"},
+    {"name": "lodgement_after_service", "expression": "lodgement_date >= service_date", "failureAction": "warn"}
+  ]
+}

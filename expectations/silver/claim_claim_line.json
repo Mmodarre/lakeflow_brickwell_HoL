@@ -1,0 +1,15 @@
+{
+  "expectations": [
+    {"name": "claim_line_id_not_null", "expression": "claim_line_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "claim_id_not_null", "expression": "claim_id IS NOT NULL", "failureAction": "warn"},
+    {"name": "line_number_positive", "expression": "line_number > 0", "failureAction": "warn"},
+    {"name": "item_code_not_null", "expression": "item_code IS NOT NULL", "failureAction": "warn"},
+    {"name": "service_date_not_null", "expression": "service_date IS NOT NULL", "failureAction": "warn"},
+    {"name": "quantity_positive", "expression": "quantity > 0", "failureAction": "warn"},
+    {"name": "charge_amount_non_negative", "expression": "charge_amount >= 0", "failureAction": "warn"},
+    {"name": "benefit_amount_non_negative", "expression": "benefit_amount >= 0", "failureAction": "warn"},
+    {"name": "gap_amount_non_negative", "expression": "gap_amount >= 0", "failureAction": "warn"},
+    {"name": "schedule_fee_non_negative", "expression": "schedule_fee >= 0", "failureAction": "warn"},
+    {"name": "benefit_not_exceed_charge", "expression": "benefit_amount <= charge_amount", "failureAction": "warn"}
+  ]
+}
