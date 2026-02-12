@@ -1,9 +1,0 @@
-pipeline: bronze_pipeline
-flowgroup: claim_prosthesis_claim_TMPL007
-
-use_template: TMPL007_cloudfiles_json_bronze
-
-template_parameters:
-  source_path: "{incoming_volume}/claim/prosthesis_claim"
-  target_table: "prosthesis_claim"
-  target_schema: "{bronze_schema_claim}"

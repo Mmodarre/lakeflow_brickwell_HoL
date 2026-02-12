@@ -1,9 +1,0 @@
-pipeline: bronze_pipeline
-flowgroup: regulatory_bank_account_TMPL006
-
-use_template: TMPL006_cloudfiles_parquet_bronze
-
-template_parameters:
-  source_path: "{incoming_volume}/regulatory/bank_account"
-  target_table: "bank_account"
-  target_schema: "{bronze_schema_regulatory}"
