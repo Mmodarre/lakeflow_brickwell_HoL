@@ -6,9 +6,8 @@ resources:
       name: gold_pipeline_pipeline
       
       # Catalog and Schema for the pipeline
-      # Using databricks.yml variables (not defined in pipeline config)
-      catalog: ${var.default_pipeline_catalog}
-      schema: ${var.default_pipeline_schema}
+      catalog: brickwell_health_dev
+      schema: edw_gold
       
       serverless: true
       libraries:
@@ -19,7 +18,15 @@ resources:
       
       configuration:
         bundle.sourcePath: ${workspace.file_path}/generated/${bundle.target}      
-      channel: CURRENT
+      channel: CURRENT      
+      tags:
+        project: brickwell_health
+        layer: gold
+      
+      event_log:
+        name: gold_pipeline_event_log
+        schema: _meta
+        catalog: brickwell_health_dev
       # Additional pipeline configuration options 
       # Add to your pipeline_config-<env>.yaml as needed and pass the file path through the --pipeline-config flag:
       # You can use substitutions file to define the values for the pipeline configuration using the following syntax:

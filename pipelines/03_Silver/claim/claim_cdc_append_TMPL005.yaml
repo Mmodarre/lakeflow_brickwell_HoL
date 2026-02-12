@@ -1,0 +1,23 @@
+pipeline: silver_pipeline
+use_template: TMPL005_cdc_log_append
+
+flowgroups:
+  - flowgroup: claim_benefit_usage_TMPL005
+    template_parameters:
+      source_table: "{catalog}.{bronze_schema_claim}.benefit_usage"
+      target_table: "benefit_usage"
+      epoch_day_columns:
+        - usage_date
+      column_order_sql: "sql/silver/claim_benefit_usage_columns.sql"
+      expectations_file: "expectations/silver/claim_benefit_usage.json"
+      target_schema: "{silver_schema_claim}"
+
+  - flowgroup: claim_claim_assessment_TMPL005
+    template_parameters:
+      source_table: "{catalog}.{bronze_schema_claim}.claim_assessment"
+      target_table: "claim_assessment"
+      epoch_us_columns:
+        - assessment_date
+      column_order_sql: "sql/silver/claim_claim_assessment_columns.sql"
+      expectations_file: "expectations/silver/claim_claim_assessment.json"
+      target_schema: "{silver_schema_claim}"

@@ -1,0 +1,35 @@
+# Job Configuration for Brickwell Health LHP Project
+# Usage: lhp deps --format job --job-config config/job_config.yaml --bundle-output
+#
+# Single-job mode: all pipelines orchestrated in one job
+
+project_defaults:
+  max_concurrent_runs: 1
+  performance_target: STANDARD
+
+  queue:
+    enabled: true
+
+  tags:
+    managed_by: lakehouse_plumber
+    project: brickwell_health
+    domain: health_insurance
+    team: data-engineering
+    environment: dev
+
+  # schedule:
+  #   quartz_cron_expression: "0 0 2 * * ?"
+  #   timezone_id: "Australia/Sydney"
+  #   pause_status: "UNPAUSED"
+
+  # timeout_seconds: 7200
+
+  # email_notifications:
+  #   on_failure:
+  #     - data-engineering@brickwell.com
+
+  # permissions:
+  #   - level: CAN_MANAGE
+  #     user_name: admin@brickwell.com
+  #   - level: CAN_VIEW
+  #     group_name: data-team
